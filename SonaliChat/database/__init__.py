@@ -9,5 +9,5 @@ chatsdb = vick["chats"]    # Chats Collection
 
 # Import functions for use in other parts of the application
 from .chats import *
-from .admin import *
+#from .admin import *
 from .fsub import *
