@@ -7,12 +7,13 @@ from SonaliChat import app
 
 
 def is_admins(func: Callable) -> Callable:
-    async def non_admin(c: app, m: Union[Message, CallbackQuery]):
-        if isinstance(m, CallbackQuery):
-            admin = await c.get_chat_member(m.message.chat.id, m.from_user.id)
-        else:
-            admin = await c.get_chat_member(m.chat.id, m.from_user.id)
+    async def non_admin(c: AMBOT, m: Message):
+        if m.from_user.id == OWNER:
+            return await func(c, m)
+
+        admin = await c.get_chat_member(m.chat.id, m.from_user.id)
         if admin.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
             return await func(c, m)
 
     return non_admin
+    
