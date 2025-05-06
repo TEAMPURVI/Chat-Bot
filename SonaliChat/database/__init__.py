@@ -4,8 +4,8 @@ import config
 # Database connection
 vickdb = AsyncIOMotorClient(config.MONGO_URL)
 vick = vickdb["VickDb"]["Vick"]
-usersdb = db["users"]    # Users Collection
-chatsdb = db["chats"]    # Chats Collection
+usersdb = vick["users"]    # Users Collection
+chatsdb = vick["chats"]    # Chats Collection
 
 # Import functions for use in other parts of the application
 from .chats import *
