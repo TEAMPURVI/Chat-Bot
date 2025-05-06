@@ -18,7 +18,7 @@ async def stats(client: app, message: Message):
         reply_markup=InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("ᴀᴅᴅ ᴍᴇ", url="https://t.me/SonaliSonaliChat?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users"),
+                    InlineKeyboardButton("ᴀᴅᴅ ᴍᴇ", url="https://t.me/SonaliChatbot?startgroup=s&admin=delete_messages+manage_video_chats+pin_messages+invite_users"),
                     InlineKeyboardButton("ᴜᴘᴅᴀᴛᴇs", url="https://t.me/PURVI_SUPPORT"),
                 ]
             ]
