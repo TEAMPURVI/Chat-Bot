@@ -1,7 +1,7 @@
 from pyrogram.enums import ChatMemberStatus as CMS
 from pyrogram.types import CallbackQuery
-from Sonali import app as Sonali  
-from Sonali.database import vick
+from SonaliChat import app as Sonali  
+from SonaliChat.database import vick
 
 @Sonali.on_callback_query()
 async def chatbot_toggle_handler(_, query: CallbackQuery):
