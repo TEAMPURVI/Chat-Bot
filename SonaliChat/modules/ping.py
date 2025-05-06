@@ -12,7 +12,7 @@ from SonaliChat.modules.helpers import PNG_BTN
 
 start_time = datetime.now()
 
-### **/ping (बॉट अपटाइम दिखाएगा)** ###
+### **/ping ** ###
 @app.on_message(filters.command("ping"))
 async def ping(client, message: Message):
     start = datetime.now()
