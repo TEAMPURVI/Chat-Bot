@@ -1,131 +1,121 @@
-import random
-from motor.motor_asyncio import AsyncIOMotorClient
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.enums import ChatAction
-from pyrogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    Message,
-    CallbackQuery,
-)
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from motor.motor_asyncio import AsyncIOMotorClient as MongoClient
+import os
+import random
+from SonaliChat import app as bot
 
-from config import MONGO_URL
-from SonaliChat import app as Sonali
-from SonaliChat.database import is_admins
+# MongoDB Connection
+MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://teamdaxx123:teamdaxx123@cluster0.ysbpgcp.mongodb.net/?retryWrites=true&w=majority")
+mongo_client = MongoClient(MONGO_URL)
+status_db = mongo_client["ChatbotStatus"]["status"]
+chatai_db = mongo_client["Word"]["WordDb"]
 
-# MongoDB setup
-mongo = AsyncIOMotorClient(MONGO_URL)
-db = mongo["VickDb"]
-chatbot_col = db["chatbot"]       # For enable/disable status
-word_col = db["WordDb"]           # For chatbot word replies
+# Helper Function: Check If User Is Admin
+async def is_admin(chat_id: int, user_id: int):
+    admins = [member.user.id async for member in bot.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS)]
+    return user_id in admins
 
-# Inline keyboard
+
+#Inline Buttons for Chatbot Control
 CHATBOT_ON = [
-    [InlineKeyboardButton("Enable", callback_data="chatbot_enable")],
-    [InlineKeyboardButton("Disable", callback_data="chatbot_disable")]
+    [InlineKeyboardButton(text="ᴇɴᴀʙʟᴇ", callback_data="enable_chatbot"), InlineKeyboardButton(text="ᴅɪsᴀʙʟᴇ", callback_data="disable_chatbot")]
 ]
 
+# /chatbot Command with Buttons
+@bot.on_message(filters.command("chatbot") & filters.group)
+async def chatbot_control(client, message: Message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id
 
-# Enable/Disable command
-@Sonali.on_message(filters.command(["chatbot"]) & filters.group & ~filters.bot)
-@is_admins
-async def chatbot_toggle_command(_, m: Message):
-    await m.reply_text(
-        f"Chat ID: {m.chat.id}\n**Enable or Disable Chatbot?**",
+    if not await is_admin(chat_id, user_id):
+        return await message.reply_text("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ !!")
+
+    await message.reply_text(
+        f"**๏ ᴄʜᴀᴛʙᴏᴛ ᴄᴏɴᴛʀᴏʟ ᴘᴀɴɴᴇʟ.**\n\n"
+        f"**✦ ᴄʜᴀᴛ ɴᴀᴍᴇ : {message.chat.title}**\n"
+        f"**✦ ᴄʜᴏᴏsᴇ ᴀɴ ᴏᴘᴛɪᴏɴ ᴛᴏ ᴇɴᴀʙʟᴇ / ᴅɪsᴀʙʟᴇ ᴄʜᴀᴛʙᴏᴛ.**",
         reply_markup=InlineKeyboardMarkup(CHATBOT_ON),
     )
 
-
-# Callback Handler
-@Sonali.on_callback_query(filters.regex("chatbot_(enable|disable)"))
-async def chatbot_toggle_callback(_, query: CallbackQuery):
-    status = query.data.split("_")[1]
+# Callback for Enable/Disable Buttons
+@bot.on_callback_query(filters.regex(r"enable_chatbot|disable_chatbot"))
+async def chatbot_callback(client, query: CallbackQuery):
     chat_id = query.message.chat.id
+    user_id = query.from_user.id
 
-    if status == "enable":
-        await chatbot_col.update_one(
-            {"chat_id": chat_id}, {"$set": {"chatbot": True}}, upsert=True
-        )
-        await query.answer("Chatbot Enabled")
-        await query.message.edit_text("**Chatbot has been Enabled.**")
+    if not await is_admin(chat_id, user_id):
+        return await query.answer("❍ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ !!", show_alert=True)
+
+    action = query.data
+
+    if action == "enable_chatbot":
+        # Enable chatbot in MongoDB
+        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "enabled"}}, upsert=True)
+        await query.answer("✅ ᴄʜᴀᴛʙᴏᴛ ᴇɴᴀʙʟᴇᴅ !!", show_alert=True)
+        await query.edit_message_text(f"**✦ ᴄʜᴀᴛʙᴏᴛ ʜᴀs ʙᴇᴇɴ ᴇɴᴀʙʟᴇᴅ ɪɴ {query.message.chat.title}.**")
     else:
-        await chatbot_col.update_one(
-            {"chat_id": chat_id}, {"$set": {"chatbot": False}}, upsert=True
-        )
-        await query.answer("Chatbot Disabled")
-        await query.message.edit_text("**Chatbot has been Disabled.**")
+        # Disable chatbot in MongoDB
+        status_db.update_one({"chat_id": chat_id}, {"$set": {"status": "disabled"}}, upsert=True)
+        await query.answer("🚫 ᴄʜᴀᴛʙᴏᴛ ᴅɪsᴀʙʟᴇᴅ !!", show_alert=True)
+        await query.edit_message_text(f"**✦ ᴄʜᴀᴛʙᴏᴛ ʜᴀs ʙᴇᴇɴ ᴅɪsᴀʙʟᴇᴅ ɪɴ {query.message.chat.title}.**")
 
+# Main Chatbot Handler (Text & Stickers)
+@bot.on_message(filters.text | filters.sticker)
+async def chatbot_reply(client, message: Message):
+    chat_id = message.chat.id
+    text = message.text.strip() if message.text else ""
+    bot_username = (await bot.get_me()).username.lower()
 
-# Group Handler
-@Sonali.on_message((filters.text | filters.sticker) & filters.group & ~filters.bot)
-async def chatbot_group(client: Client, message: Message):
-    if message.text and message.text.startswith(("!", "/", "?", "@", "#")):
+    # Ignore replies that are not to the bot's own messages
+    if message.reply_to_message and message.reply_to_message.from_user.id != (await bot.get_me()).id:
         return
 
-    status = await chatbot_col.find_one({"chat_id": message.chat.id})
-    if not status or not status.get("chatbot", False):
-        return  # chatbot disabled
+    # First, check if the chatbot is enabled for the current chat
+    chat_status = await status_db.find_one({"chat_id": chat_id})
+    if chat_status and chat_status.get("status") == "disabled":
+        return  # If chatbot is disabled, do not reply to any messages
 
-    await client.send_chat_action(message.chat.id, ChatAction.TYPING)
-    responses = list(await word_col.find({"word": message.text}).to_list(length=50))
+    # Typing indicator
+    await bot.send_chat_action(chat_id, ChatAction.TYPING)
 
-    if not message.reply_to_message:
-        if responses:
-            reply_data = random.choice(responses)
-            if reply_data["check"] == "sticker":
-                await message.reply_sticker(reply_data["text"])
+    # If it's a group message
+    if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
+        # Fetch response from MongoDB
+        K = []
+        if message.sticker:
+            async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
+                K.append(x['text'])
+        else:
+            async for x in chatai_db.find({"word": text}):
+                K.append(x['text'])
+
+        if K:
+            response = random.choice(K)
+            is_text = await chatai_db.find_one({"text": response})
+            if is_text and is_text['check'] == "sticker":
+                await message.reply_sticker(response)
             else:
-                await message.reply_text(reply_data["text"])
-    else:
-        if message.reply_to_message.from_user.id == client.me.id:
-            if responses:
-                reply_data = random.choice(responses)
-                if reply_data["check"] == "sticker":
-                    await message.reply_sticker(reply_data["text"])
-                else:
-                    await message.reply_text(reply_data["text"])
+                await message.reply_text(response)
+            return
+
+    # Handle private chat messages (same logic as for groups, but for private)
+    elif message.chat.type == enums.ChatType.PRIVATE:
+        # Fetch response from MongoDB
+        K = []
+        if message.sticker:
+            async for x in chatai_db.find({"word": message.sticker.file_unique_id}):
+                K.append(x['text'])
         else:
-            # Learn new word
-            if message.sticker:
-                await word_col.insert_one({
-                    "word": message.reply_to_message.text,
-                    "text": message.sticker.file_id,
-                    "check": "sticker"
-                })
-            elif message.text:
-                await word_col.insert_one({
-                    "word": message.reply_to_message.text,
-                    "text": message.text,
-                    "check": "text"
-                })
+            async for x in chatai_db.find({"word": text}):
+                K.append(x['text'])
 
-
-# Private Chat - Text
-@Sonali.on_message(filters.text & filters.private & ~filters.bot)
-async def chatbot_private(client: Client, message: Message):
-    if message.text.startswith(("!", "/", "?", "@", "#")):
-        return
-
-    await client.send_chat_action(message.chat.id, ChatAction.TYPING)
-    responses = list(await word_col.find({"word": message.text}).to_list(length=50))
-
-    if responses:
-        reply_data = random.choice(responses)
-        if reply_data["check"] == "sticker":
-            await message.reply_sticker(reply_data["text"])
-        else:
-            await message.reply_text(reply_data["text"])
-
-
-# Private Chat - Sticker
-@Sonali.on_message(filters.sticker & filters.private & ~filters.bot)
-async def chatbot_private_sticker(client: Client, message: Message):
-    await client.send_chat_action(message.chat.id, ChatAction.TYPING)
-    responses = list(await word_col.find({"word": message.sticker.file_unique_id}).to_list(length=50))
-
-    if responses:
-        reply_data = random.choice(responses)
-        if reply_data["check"] == "text":
-            await message.reply_text(reply_data["text"])
-        else:
-            await message.reply_sticker(reply_data["text"])
+        if K:
+            response = random.choice(K)
+            is_text = await chatai_db.find_one({"text": response})
+            if is_text and is_text['check'] == "sticker":
+                await message.reply_sticker(response)
+            else:
+                await message.reply_text(response)
+            return
