@@ -11,5 +11,3 @@ chatsdb = db["chats"]    # Chats Collection
 from .chats import *
 from .admin import *
 from .fsub import *
-from .sonali import *
-from .SonaliChat import *
