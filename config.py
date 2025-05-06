@@ -15,7 +15,7 @@ OWNER_ID = int(getenv("OWNER_ID", None))
 OWNER = 8143754205
 LOGGER_GROUP_ID = -1002043788670
 BOT_NAME = os.environ.get("BOT_NAME","𝐒‌‌σ፝֠֩‌ηᴧℓɪ")
-BOT_USERNAME = os.environ.get("BOT_USERNAME", "SonaliSonaliChat")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "Sonalichatbot")
 SUPPORT_GROUP = os.environ.get("SUPPORT_GROUP", "PURVI_SUPPORT")
 UPDATES_CHANNEL = os.environ.get("UPDATES_CHANNEL", "PURVI_SUPPORT")
 
