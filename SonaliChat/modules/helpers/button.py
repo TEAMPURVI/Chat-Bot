@@ -57,3 +57,11 @@ HELP_BACK = [
         InlineKeyboardButton(text="вᴧᴄᴋ", callback_data="HELP_BACK"),
     ],
 ]
+
+
+CHATBOT_ON = [
+    [
+        InlineKeyboardButton(text="ᴇɴᴀʙʟᴇ", callback_data=f"addchat"),
+        InlineKeyboardButton(text="ᴅɪsᴀʙʟᴇ", callback_data=f"rmchat"),
+    ],
+]
