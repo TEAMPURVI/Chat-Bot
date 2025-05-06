@@ -11,7 +11,7 @@ from pyrogram.types import (
 
 from config import MONGO_URL
 from SonaliChat import app as Sonali
-from SonaliChat.modules.helpers import is_admins
+from SonaliChat.database import is_admins
 
 # MongoDB setup
 mongo = AsyncIOMotorClient(MONGO_URL)
