@@ -6,7 +6,8 @@ from pyrogram.types import InlineKeyboardMarkup, Message
 
 from config import MONGO_URL
 from SonaliChat import app as Sonali
-from SonaliChat.modules.helpers import CHATBOT_ON, is_admins
+from SonaliChat.modules.helpers import CHATBOT_ON
+from SonaliChat.database import is_admins
 
 
 #Chatbot ON/OFF Command (Group Admins Only)
